@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lun.c03.mapper.dao.EmployeeMapper">
+
+	<cache eviction="FIFO" flushInterval="60000" readOnly="false" size="1024" ></cache>
+
+	<!-- =======================鉴别器============================ -->
+	<!-- <discriminator javaType=""></discriminator>
+		鉴别器：mybatis可以使用discriminator判断某列的值，然后根据某列的值改变封装行为
+		封装Employee：
+			如果查出的是女生：就把部门信息查询出来，否则不查询；
+			如果是男生，把last_name这一列的值赋值给email;
+	 -->
+	 <resultMap type="com.lun.c01.helloworld.bean.Employee" id="MyEmpDis">
+	 	<id column="id" property="id"/>
+	 	<result column="last_name" property="lastName"/>
+	 	<result column="email" property="email"/>
+	 	<result column="gender" property="gender"/>
+	 	<!--
+	 		column：指定判定的列名
+	 		javaType：列值对应的java类型  -->
+	 	<discriminator javaType="string" column="gender">
+	 		<!--女生  resultType:指定封装的结果类型；不能缺少。/resultMap-->
+	 		<case value="0" resultType="com.lun.c01.helloworld.bean.Employee">
+	 			<association property="department" 
+			 		select="com.lun.c03.mapper.dao.DepartmentMapper.getDeptById"
+			 		column="department_id" fetchType="eager" >
+		 		</association>
+	 		</case>
+	 		<!--男生 ;如果是男生，把last_name这一列的值赋值给email; -->
+	 		<case value="1" resultType="com.lun.c01.helloworld.bean.Employee">
+		 		<id column="id" property="id"/>
+			 	<result column="last_name" property="lastName"/>
+			 	<result column="last_name" property="email"/>
+			 	<result column="gender" property="gender"/>
+	 		</case>
+	 	</discriminator>
+	 </resultMap>
+
+	 <!--  public Employee getEmpByIdStep(Integer id);-->
+	 <select id="getEmpsWithDiscriminator" resultMap="MyEmpDis">
+	 	select * from employee limit 10
+	 </select>
+
+
+<!-- 用于department的分布查询 -->
+<!--  public Employee getEmpsByDeptId(Integer departmentId);-->
+	 <select id="getEmpByDeptId" resultType="com.lun.c01.helloworld.bean.Employee">
+	 	select * from employee where department_id=#{department_id}
+	 </select>
+
+
+<!-- association分步查询  -->
+	<!-- 使用association进行分步查询：
+		1、先按照员工id查询员工信息
+		2、根据查询员工信息中的department_id值去部门表查出部门信息
+		3、部门设置到员工中；
+	 -->
+	 <!--  id  last_name  email   gender    d_id   -->
+	 <resultMap type="com.lun.c01.helloworld.bean.Employee" id="MyEmpByStep">
+	 	<id column="id" property="id"/>
+	 	<result column="last_name" property="lastName"/>
+	 	<result column="email" property="email"/>
+	 	<result column="gender" property="gender"/>
+	 	<!-- association定义关联对象的封装规则
+	 		select:表明当前属性是调用select指定的方法查出的结果
+	 		column:指定将哪一列的值传给这个方法
+	 		
+	 		流程：使用select指定的方法（传入column指定的这列参数的值）查出对象，并封装给property指定的属性
+	 	 -->
+ 		<association property="department" 
+	 		select="com.lun.c03.mapper.dao.DepartmentMapper.getDeptById"
+	 		column="department_id">
+ 		</association>
+	 </resultMap>
+	 <!--  public Employee getEmpByIdStep(Integer id);-->
+	 <select id="getEmpByIdStep" resultMap="MyEmpByStep">
+	 	select * from employee where id=#{id}
+	 </select>
+
+
+<!--  association可以指定联合的javaBean对象 -->
+	<resultMap type="com.lun.c01.helloworld.bean.Employee" id="MyDifEmp2">
+		<id column="id" property="id"/>
+		<result column="last_name" property="lastName"/>
+		<result column="gender" property="gender"/>
+		<!--  association可以指定联合的javaBean对象
+		property="dept"：指定哪个属性是联合的对象
+		javaType:指定这个属性对象的类型[不能省略]
+		-->
+		<association property="department" javaType="com.lun.c01.helloworld.bean.Department">
+			<id column="department_id" property="id"/>
+			<result column="department_name" property="departmentName"/>
+		</association>
+	</resultMap>
+
+	<!--  public Employee getEmpAndDept2(Integer id);-->
+	<select id="getEmpAndDept2" resultMap="MyDifEmp2">
+		SELECT
+			e.id id,e.last_name last_name,e.gender gender,
+			e.department_id department_id, d.department_name department_name 
+		FROM employee e, department d
+		WHERE e.department_id=d.id AND e.id=#{id}
+	</select>
+
+<!-- 联合查询：级联属性封装结果集
+	  -->
+	<resultMap type="com.lun.c01.helloworld.bean.Employee" id="MyDifEmp">
+		<id column="id" property="id"/>
+		<result column="last_name" property="lastName"/>
+		<result column="gender" property="gender"/>
+		<result column="department_id" property="department.id"/>
+		<result column="department_name" property="department.departmentName"/>
+	</resultMap>
+
+	<!--  public Employee getEmpAndDept(Integer id);-->
+	<select id="getEmpAndDept" resultMap="MyDifEmp">
+		SELECT
+			e.id id,e.last_name last_name,e.gender gender,
+			e.department_id department_id, d.department_name department_name 
+		FROM employee e, department d
+		WHERE e.department_id=d.id AND e.id=#{id}
+	</select>
+
+<!--自定义某个javaBean的封装规则
+	type：自定义规则的Java类型
+	id:唯一id方便引用
+	  -->
+	<resultMap type="com.lun.c01.helloworld.bean.Employee" id="MySimpleEmp">
+		<!--指定主键列的封装规则
+		id定义主键会底层有优化；
+		column：指定哪一列
+		property：指定对应的javaBean属性
+		  -->
+		<id column="id" property="id"/>
+		<!-- 定义普通列封装规则 -->
+		<result column="last_name" property="lastName"/>
+		<!-- 其他不指定的列会自动封装：我们只要写resultMap就把全部的映射规则都写上。 -->
+		<result column="email" property="email"/>
+		<result column="gender" property="gender"/>
+	</resultMap>
+	
+	<!-- resultMap:自定义结果集映射规则；  -->
+	<!-- public Employee getEmpById(Integer id); -->
+	<select id="getEmpByIdWithResultMap"  resultMap="MySimpleEmp">
+		select * from employee where id=#{id}
+	</select>
+
+<!-- return Map -->
+ 	<!--public Map<Integer, Employee> getEmpByLastNameLikeReturnMap(String lastName);  -->
+ 	<select id="getEmpByLastNameLikeReturnMap" resultType="com.lun.c01.helloworld.bean.Employee">
+ 		select * from employee where last_name like #{lastName}
+ 	</select>
+ 
+ 	<!--public Map<String, Object> getEmpByIdReturnMap(Integer id);  -->
+ 	<select id="getEmpByIdReturnMap" resultType="map">
+ 		select * from employee where id=#{id}
+ 	</select>
+
+
+<!-- public List<Employee> getEmpsByLastNameLike(String lastName); -->
+	<!--resultType：如果返回的是一个集合，要写集合中元素的类型  -->
+	<select id="getEmpsByLastNameLike" resultType="com.lun.c01.helloworld.bean.Employee">
+		select * from employee where last_name like #{lastName}
+	</select>
+
+<!-- map 作参输入 -->
+ 	<select id="getEmpByMap" resultType="com.lun.c01.helloworld.bean.Employee">
+ 		select * from employee where id = #{id} and last_name=#{lastName}
+ 	</select>
+
+<!-- 多个参数，不能直写id或lastName，否则抛出 org.apache.ibatis.binding.BindingException: Parameter 'id' not found. Available parameters are [1, 0, param1, param2]-->
+ 	<select id="getEmpByIdAndLastName" resultType="com.lun.c01.helloworld.bean.Employee">
+ 		select * from employee where id = #{id} and last_name=#{lastName}
+ 	</select>
+ 	<select id="getEmpByIdAndLastName2" resultType="com.lun.c01.helloworld.bean.Employee">
+ 		select * from employee where id = #{0} and last_name=#{1}
+ 	</select>
+ 	<select id="getEmpByIdAndLastName3" resultType="com.lun.c01.helloworld.bean.Employee">
+ 		select * from employee where id = #{param1} and last_name=#{param2}
+ 	</select>
+ 	<select id="getEmpByIdAndLastName4" resultType="com.lun.c01.helloworld.bean.Employee">
+ 		select * from employee where id = #{id} and last_name=#{lastName}
+ 	</select>
+ 	
+<!-- 单个参数不做处理 -->
+	<select id="getEmpById2" resultType="com.lun.c01.helloworld.bean.Employee">
+		select t.* from employee t where id = #{idabc}
+	</select>
+
+
+
+<!-- basic CRUD basic CRUD basic CRUD -->
+<!-- ################################ -->
+
+ 	<select id="getEmpById" resultType="com.lun.c01.helloworld.bean.Employee">
+		select * from employee where id = #{id}
+	</select>
+
+	
+	<!-- public void addEmp(Employee employee); -->
+	<!-- parameterType：参数类型，可以省略， 
+	获取自增主键的值：
+		mysql支持自增主键，自增主键值的获取，mybatis也是利用statement.getGenreatedKeys()；
+		useGeneratedKeys="true"；使用自增主键获取主键值策略
+		keyProperty；指定对应的主键属性，也就是mybatis获取到主键值以后，将这个值封装给javaBean的哪个属性
+	-->
+	<insert id="addEmp" parameterType="com.lun.c01.helloworld.bean.Employee"
+		useGeneratedKeys="true" keyProperty="id" >
+		insert into employee(last_name,email,gender) 
+		values(#{lastName},#{email},#{gender})
+	</insert>
+	
+	
+	<!-- public void updateEmp(Employee employee);  -->
+	<update id="updateEmp">
+		update employee 
+		set last_name=#{lastName},email=#{email},gender=#{gender}
+		where id=#{id}
+	</update>
+	
+	<!-- public void deleteEmpById(Integer id); -->
+	<delete id="deleteEmpById">
+		delete from employee where id=#{id}
+	</delete>
+	
+	
+</mapper>

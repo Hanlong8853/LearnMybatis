@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lun.c09.other.dao.EmployeeMapper">
+
+	<select id="getEmpById" resultType="com.lun.c01.helloworld.bean.Employee">
+		select id,last_name lastName,email,gender from employee where id = #{id}
+	</select>
+	
+	<select id="getEmps" resultType="com.lun.c01.helloworld.bean.Employee">
+		select id,last_name lastName,email,gender from employee
+	</select>
+	
+	<insert id="addEmp" parameterType="com.lun.c01.helloworld.bean.Employee"
+		useGeneratedKeys="true" keyProperty="id" >
+		insert into employee(last_name,email,gender) 
+		values(#{lastName},#{email},#{gender})
+	</insert>
+	<insert id="addEmp2" parameterType="com.lun.c09.other.bean.Employee"
+		useGeneratedKeys="true" keyProperty="id" >
+		insert into employee(last_name,email,gender,empStatus) 
+		values(#{lastName},#{email},#{gender},#{empStatus})
+	</insert>
+	<select id="getEmpById2" resultType="com.lun.c09.other.bean.Employee">
+		select id,last_name lastName,email,gender,empStatus from employee where id = #{id}
+	</select>
+
+</mapper>

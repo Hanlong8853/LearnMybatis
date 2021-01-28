@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+ PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+	<typeHandlers>
+		<!-- 
+		<typeHandler handler="org.apache.ibatis.type.EnumOrdinalTypeHandler" 
+			javaType="com.lun.c09.other.bean.EmpStatus"/>
+		 -->
+		<typeHandler handler="com.lun.c09.other.typehandler.MyEnumEmpStatusTypeHandler" 
+			javaType="com.lun.c09.other.bean.EmpStatus"/>
+	</typeHandlers>
+
+	<plugins>
+		<plugin interceptor="com.github.pagehelper.PageInterceptor"></plugin>
+	</plugins>
+
+	<environments default="development">
+		<environment id="development">
+			<transactionManager type="JDBC" />
+			<dataSource type="POOLED">
+				<property name="driver" value="com.mysql.cj.jdbc.Driver" />
+				<property name="url" value="jdbc:mysql://localhost:3306/learnmybatis?useUnicode=true&amp;characterEncoding=UTF-8&amp;serverTimezone=CTT" />
+				<property name="username" value="root" />
+				<property name="password" value="123" />
+			</dataSource>
+		</environment>
+	</environments>
+	
+	<mappers>
+		<mapper resource="c09/EmployeeMapper.xml" />
+	</mappers>
+	
+</configuration>
